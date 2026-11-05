@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npm run build -w packages/client",
+  "outputDirectory": "packages/client/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
