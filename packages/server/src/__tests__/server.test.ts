@@ -301,4 +301,45 @@ describe('Server & Socket.IO Integration Tests', () => {
     s1.disconnect();
     s2.disconnect();
   });
+
+  it('lets the host start the next round through the socket intent', async () => {
+    const createRes = await fetch(`${serverUrl}/api/rooms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hostName: 'RoundHost' })
+    });
+    const { roomId, sessionToken } = await createRes.json();
+    const host: ClientSocketType<ServerToClientEvents, ClientToServerEvents> = ClientSocket(serverUrl, { transports: ['websocket'] });
+    const guest: ClientSocketType<ServerToClientEvents, ClientToServerEvents> = ClientSocket(serverUrl, { transports: ['websocket'] });
+
+    await new Promise<void>(resolve => host.emit('JOIN_ROOM', { roomId, playerName: 'RoundHost', sessionToken }, () => resolve()));
+    await new Promise<void>(resolve => guest.emit('JOIN_ROOM', { roomId, playerName: 'Guest' }, () => resolve()));
+    const firstRound = new Promise<{ state: ClientGameState }>(resolve => {
+      host.on('STATE_UPDATE', update => {
+        if (update.state.status === 'playing') resolve(update);
+      });
+    });
+    host.emit('START_GAME');
+    expect((await firstRound).state.roundNumber).toBe(1);
+
+    // Simulate the already-tested engine reaching the round summary.
+    const room = await serverInstance.roomStore.get(roomId);
+    expect(room).toBeDefined();
+    room!.state.status = 'round_end';
+    await serverInstance.roomStore.set(roomId, room!);
+
+    const guestError = new Promise<{ message: string }>(resolve => guest.once('ACTION_ERROR', resolve));
+    guest.emit('START_NEXT_ROUND');
+    expect((await guestError).message).toContain('host');
+
+    const secondRound = new Promise<{ state: ClientGameState }>(resolve => {
+      host.on('STATE_UPDATE', update => {
+        if (update.state.status === 'playing' && update.state.roundNumber === 2) resolve(update);
+      });
+    });
+    host.emit('START_NEXT_ROUND');
+    expect((await secondRound).state.myHand).toHaveLength(10);
+    host.disconnect();
+    guest.disconnect();
+  });
 });

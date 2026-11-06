@@ -159,6 +159,16 @@ export function createServer() {
       }
     });
 
+    socket.on('START_NEXT_ROUND', async () => {
+      if (!currentRoomId || !currentPlayerId) return;
+      const res = await roomManager.applyGameAction(currentRoomId, currentPlayerId, {
+        type: 'START_NEXT_ROUND'
+      });
+      if (!res.success) {
+        socket.emit('ACTION_ERROR', { code: 'START_NEXT_ROUND_FAILED', message: res.error || 'Failed' });
+      }
+    });
+
     // 4. KICK_PLAYER intent
     socket.on('KICK_PLAYER', async payload => {
       if (!currentRoomId || !currentPlayerId) return;

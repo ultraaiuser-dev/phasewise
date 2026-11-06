@@ -85,6 +85,7 @@ export interface ClientToServerEvents {
   JOIN_ROOM: (payload: JoinRoomPayload, ack?: (response: { success: boolean; error?: string }) => void) => void;
   UPDATE_SETTINGS: (payload: UpdateSettingsPayload) => void;
   START_GAME: () => void;
+  START_NEXT_ROUND: () => void;
   KICK_PLAYER: (payload: KickPlayerPayload) => void;
   REMOVE_AWAY_PLAYER: (payload: RemoveAwayPlayerPayload) => void;
   DRAW_DECK: () => void;

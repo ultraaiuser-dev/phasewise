@@ -47,8 +47,8 @@ export const RoundSummaryModal: React.FC = () => {
       return;
     }
 
-    // Online game: host triggers next round
-    socket?.emit("START_GAME"); // starts round
+    // Online game: host advances the finished round.
+    socket?.emit("START_NEXT_ROUND");
   };
 
   return (
